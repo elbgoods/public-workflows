@@ -1,0 +1,93 @@
+name: Build PHP FPM Container and Upload to Dockerhub
+
+on:
+  push:
+    branches: [ main ]
+  release:
+    types:
+      - created
+
+  workflow_call:
+    secrets:
+      DockerHubUser:
+        required: true
+      DockerHubPass:
+        required: true
+      ComposerAuth:
+        required: true
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Docker Login
+        uses: docker/login-action@v1.8.0
+        with:
+          username: ${{ secrets.DockerHubUser }}
+          password: ${{ secrets.DockerHubPass }}
+      ######################################################
+      # Setting up final build tags
+      ######################################################
+      - name: Prepare Tags
+        id: prep
+        run: |
+          DOCKER_REPO=elbgoodsgmbh/${GITHUB_REPOSITORY#*/}
+          echo ::set-output name=dockerrepo::${DOCKER_REPO}
+
+          VERSION=edge
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            VERSION=nightly
+          fi
+          TAGS="${DOCKER_REPO}:${VERSION}"
+          if [[ $VERSION =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+            TAGS="$TAGS,${DOCKER_REPO}:latest"
+          fi
+          echo ::set-output name=tags::${TAGS}
+      ######################################################
+      # Setup Cache and BuildX
+      ######################################################
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          driver-opts: network=host
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+      ######################################################
+      # Build!
+      ######################################################
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v2.1.0
+        with:
+          cache-from: "type=local,src=/tmp/.buildx-cache"
+          cache-to: "type=local,dest=/tmp/.buildx-cache"
+          builder: ${{ steps.buildx.outputs.name }}
+          file: ./Dockerfile
+          target: production
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.prep.outputs.tags }}
+
+      - name: Build and push local
+        id: docker_build_local
+        uses: docker/build-push-action@v2.1.0
+        if: ${{ github.ref_name == 'main' }}
+        with:
+          cache-from: "type=local,src=/tmp/.buildx-cache"
+          cache-to: "type=local,dest=/tmp/.buildx-cache"
+          builder: ${{ steps.buildx.outputs.name }}
+          file: ./Dockerfile
+          target: local
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.prep.outputs.dockerrepo }}:local
