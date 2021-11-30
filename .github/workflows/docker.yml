@@ -14,7 +14,7 @@ on:
       DockerHubPass:
         required: true
       ComposerAuth:
-        required: true
+        required: false
 
 jobs:
   main:
@@ -78,6 +78,8 @@ jobs:
           target: production
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.prep.outputs.tags }}
+          build-args: |
+            COMPOSER_AUTH=${{ secrets.ComposerAuth }}
 
       - name: Build and push local
         id: docker_build_local
@@ -91,3 +93,5 @@ jobs:
           target: local
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.prep.outputs.dockerrepo }}:local
+          build-args: |
+            COMPOSER_AUTH=${{ secrets.ComposerAuth }}
