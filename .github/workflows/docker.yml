@@ -1,12 +1,6 @@
 name: Build PHP FPM Container and Upload to Dockerhub
 
 on:
-  push:
-    branches: [ main ]
-  release:
-    types:
-      - created
-
   workflow_call:
     secrets:
       DockerHubUser:
