@@ -28,7 +28,7 @@ jobs:
         id: prep
         run: |
           IMAGE=elbgoodsgmbh/${GITHUB_REPOSITORY#*/}
-          echo ::set-output name=image::${DOCKER_REPO}
+          echo ::set-output name=image::${IMAGE}
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v3
