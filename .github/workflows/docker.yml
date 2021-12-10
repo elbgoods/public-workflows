@@ -37,8 +37,11 @@ jobs:
           flavor: |
             latest=auto
           tags: |
-            type=edge,enable=true,priority=700,prefix=,suffix=,branch=$repo.default_branch
-
+            type=edge,enable=true,branch=main
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
       ######################################################
       # Setup Cache and BuildX
       ######################################################
