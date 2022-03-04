@@ -45,11 +45,17 @@ jobs:
       ######################################################
       # Setup Cache and BuildX
       ######################################################
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+        
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v1
         with:
           driver-opts: network=host
+        
+      - name: Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
 
       - name: Cache Docker layers
         uses: actions/cache@v2
