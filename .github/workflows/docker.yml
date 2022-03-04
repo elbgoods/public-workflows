@@ -94,5 +94,6 @@ jobs:
           target: local
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.prep.outputs.image }}:local
+          platforms: linux/amd64,linux/arm64
           build-args: |
             COMPOSER_AUTH=${{ secrets.ComposerAuth }}
