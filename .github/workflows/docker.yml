@@ -12,12 +12,12 @@ on:
 
 jobs:
   main:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Docker Login
-        uses: docker/login-action@v1.8.0
+        uses: docker/login-action@v1
         with:
           username: ${{ secrets.DockerHubUser }}
           password: ${{ secrets.DockerHubPass }}
@@ -44,6 +44,52 @@ jobs:
             type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
       ######################################################
       # Setup Cache and BuildX
+      ######################################################        
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          driver-opts: network=host
+      ######################################################
+      # Build!
+      ######################################################
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          cache-from: "type=gha"
+          cache-to: "type=gha,mode=max"
+          builder: ${{ steps.buildx.outputs.name }}
+          file: ./Dockerfile
+          target: production
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            COMPOSER_AUTH=${{ secrets.ComposerAuth }}
+
+  local:
+    runs-on: self-hosted
+    if: github.ref_name == 'main'	
+    needs: main
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Docker Login
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DockerHubUser }}
+          password: ${{ secrets.DockerHubPass }}
+      ######################################################
+      # Setting up final build tags
+      ######################################################
+      - name: Prepare Tags
+        id: prep
+        run: |
+          IMAGE=elbgoodsgmbh/${GITHUB_REPOSITORY#*/}
+          echo ::set-output name=image::${IMAGE}
+      ######################################################
+      # Setup Cache and BuildX
       ######################################################
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -58,43 +104,19 @@ jobs:
         
       - name: Available platforms
         run: echo ${{ steps.buildx.outputs.platforms }}
-
-      - name: Cache Docker layers
-        uses: actions/cache@v2
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.repository }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
       ######################################################
       # Build!
       ######################################################
-      - name: Build and push
-        id: docker_build
-        uses: docker/build-push-action@v2.1.0
-        with:
-          cache-from: "type=local,src=/tmp/.buildx-cache"
-          cache-to: "type=local,dest=/tmp/.buildx-cache"
-          builder: ${{ steps.buildx.outputs.name }}
-          file: ./Dockerfile
-          target: production
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            COMPOSER_AUTH=${{ secrets.ComposerAuth }}
-
       - name: Build and push local
         id: docker_build_local
-        uses: docker/build-push-action@v2.1.0
-        if: ${{ github.ref_name == 'main' }}
+        uses: docker/build-push-action@v2
         with:
-          cache-from: "type=local,src=/tmp/.buildx-cache"
-          cache-to: "type=local,dest=/tmp/.buildx-cache"
+          cache-from: "type=gha"
+          cache-to: "type=gha,mode=max"
           builder: ${{ steps.buildx.outputs.name }}
           file: ./Dockerfile
           target: local
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.prep.outputs.image }}:local
           platforms: linux/amd64,linux/arm64
           build-args: |
