@@ -126,9 +126,21 @@ jobs:
           build-args: |
             COMPOSER_AUTH=${{ secrets.ComposerAuth }}
             
+  check-org:
+      runs-on: ubuntu-latest
+      outputs:
+        check-org: ${{ steps.check-org.outputs.defined }}
+      steps:
+          - id: check-org
+            if: "${{ env.SentryOrg != '' }}"
+            run: echo "::set-output name=defined::true"
+            env:
+              SentryOrg: ${{ secrets.SentryOrg }}
+            
   publish-sentry:
     runs-on: ubuntu-latest
-    if: ${{ ( github.event_name == 'release' || github.event.action == 'created' ) && secrets.SentryOrg }}
+    needs: [check-org]
+    if: ${{ ( github.event_name == 'release' || github.event.action == 'created' ) && needs.check-org.outputs.hasSentry == 'true' }}
     steps:
     - uses: actions/checkout@v2
     
