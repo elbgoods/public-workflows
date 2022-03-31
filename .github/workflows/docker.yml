@@ -124,9 +124,12 @@ jobs:
             
   publish:
     runs-on: ubuntu-latest
-    if: github.event.action == 'created'
+    #if: ${{ github.event.action == 'created' }} 
     steps:
     - uses: actions/checkout@v2
+    
+    - name: Print the input tag to STDOUT
+      run: echo  The tags are ${{ github.event }} 
     
     - name: Prepare Project
       id: project
