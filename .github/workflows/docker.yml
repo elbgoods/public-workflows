@@ -128,7 +128,7 @@ jobs:
             
   publish:
     runs-on: ubuntu-latest
-    if: github.event.action == 'released'
+    if: ${{ github.event_name == 'release' && github.event.action == 'created' }}
     steps:
     - uses: actions/checkout@v2
     
