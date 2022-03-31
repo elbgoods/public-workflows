@@ -124,7 +124,7 @@ jobs:
             
   publish:
     runs-on: ubuntu-latest
-    if: github.ref_type == 'tag'
+    if: github.event.action == 'published'
     steps:
     - uses: actions/checkout@v2
     
