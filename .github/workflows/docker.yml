@@ -121,3 +121,23 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args: |
             COMPOSER_AUTH=${{ secrets.ComposerAuth }}
+            
+  publish:
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag' && contains(github.ref_name,'v')
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Prepare Project
+      id: project
+      run: |
+        PROJECT=${GITHUB_REPOSITORY#*/}
+        echo ::set-output name=project::${PROJECT}
+        
+    - name: Notify Sentry of new Release
+      uses: getsentry/action-release@v1
+      env:
+        SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+        SENTRY_PROJECT: ${{ steps.project.outputs.project }}
+
