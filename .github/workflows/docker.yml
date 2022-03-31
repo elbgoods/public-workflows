@@ -124,7 +124,7 @@ jobs:
             
   publish:
     runs-on: ubuntu-latest
-    if: github.ref_type == 'tag' && contains(github.ref_name,'v')
+    if: github.ref_type == 'tag'
     steps:
     - uses: actions/checkout@v2
     
