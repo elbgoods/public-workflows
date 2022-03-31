@@ -9,6 +9,10 @@ on:
         required: true
       ComposerAuth:
         required: false
+      SentryToken:
+        required: false
+      SentryOrg:
+        required: false
 
 jobs:
   main:
@@ -124,12 +128,9 @@ jobs:
             
   publish:
     runs-on: ubuntu-latest
-    #if: ${{ github.event.action == 'created' }} 
+    if: ${{ github.event.action == 'released' }} 
     steps:
     - uses: actions/checkout@v2
-    
-    - name: Print the input tag to STDOUT
-      run: echo  The tags are ${{ github.event.action }} 
     
     - name: Prepare Project
       id: project
@@ -140,7 +141,7 @@ jobs:
     - name: Notify Sentry of new Release
       uses: getsentry/action-release@v1
       env:
-        SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+        SENTRY_AUTH_TOKEN: ${{ secrets.SentryToken }}
+        SENTRY_ORG: ${{ secrets.SentryOrg }}
         SENTRY_PROJECT: ${{ steps.project.outputs.project }}
 
