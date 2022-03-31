@@ -156,4 +156,7 @@ jobs:
         SENTRY_AUTH_TOKEN: ${{ secrets.SentryToken }}
         SENTRY_ORG: ${{ secrets.SentryOrg }}
         SENTRY_PROJECT: ${{ steps.project.outputs.project }}
+      with:
+        set_commits: skip
+        version: ${{ github.ref }}     
 
