@@ -126,7 +126,7 @@ jobs:
           build-args: |
             COMPOSER_AUTH=${{ secrets.ComposerAuth }}
             
-  publish:
+  publish-sentry:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'release' || github.event.action == 'created' }}
     steps:
