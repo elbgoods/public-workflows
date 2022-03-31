@@ -128,7 +128,7 @@ jobs:
             
   publish-sentry:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'release' || github.event.action == 'created' }}
+    if: ${{ ( github.event_name == 'release' || github.event.action == 'created' ) && secrets.SentryOrg }}
     steps:
     - uses: actions/checkout@v2
     
