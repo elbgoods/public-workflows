@@ -140,7 +140,7 @@ jobs:
   publish-sentry:
     runs-on: ubuntu-latest
     needs: [check-org]
-    if: ${{ ( github.event_name == 'release' || github.event.action == 'created' ) && needs.check-org.outputs.hasSentry == 'true' }}
+    if: ${{ ( github.event_name == 'release' || github.event.action == 'created' ) && needs.check-org.outputs.check-org == 'true' }}
     steps:
     - uses: actions/checkout@v2
     
