@@ -129,7 +129,7 @@ jobs:
     - uses: actions/checkout@v2
     
     - name: Print the input tag to STDOUT
-      run: echo  The tags are ${{ github.event }} 
+      run: echo  The tags are ${{ github.event.action }} 
     
     - name: Prepare Project
       id: project
