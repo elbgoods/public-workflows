@@ -1,2 +1,2 @@
 # public-workflows
-Collection of reuseable workflow files
+Collection of reusable workflow files
