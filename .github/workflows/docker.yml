@@ -53,7 +53,7 @@ jobs:
           flavor: |
             latest=auto
           tags: |
-            type=edge,enable=true,branch=main
+            type=edge,enable=true,branch=CREW-3008-deployment-optimization
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
