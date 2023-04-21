@@ -35,7 +35,6 @@ jobs:
         with:
           username: ${{ secrets.DockerHubUser }}
           password: ${{ secrets.DockerHubPass }}
-
       ######################################################
       # Setting up final build tags
       ######################################################
@@ -44,20 +43,24 @@ jobs:
         run: |
           IMAGE=elbgoodsgmbh/${GITHUB_REPOSITORY#*/}
           echo ::set-output name=image::${IMAGE}
-
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v4
         with:
           images: ${{ steps.prep.outputs.image }}
           flavor: |
-            latest=auto
+            latest=false
           tags: |
-            type=edge,enable=true,branch=CREW-3008-deployment-optimization
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
+            type=semver,pattern={{version}},suffix=-staging,enable=${{ matrix.target == 'staging' && github.event_name == 'release' }}
+            type=semver,pattern={{version}},enable=${{ matrix.target == 'production' }}
+
+            type=ref,event=branch
+
+            type=ref,event=pr,enable=${{ matrix.target == 'production' }}
+            type=edge,branch=$repo.default_branch,enable=${{ matrix.target != 'development' }}
+
+            type=raw,value=${{ matrix.target }},enable=${{ matrix.target == 'development' || matrix.target == 'testing' }}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') && matrix.target == 'production' }}
 
       ######################################################
       # Setup Cache and BuildX
@@ -69,7 +72,6 @@ jobs:
           driver-opts: network=host
 
       - name: Build and push
-        if: matrix.target != 'production'
         id: docker_build
         uses: docker/build-push-action@v4
         with:
@@ -79,29 +81,11 @@ jobs:
           file: ./Dockerfile
           target: ${{ matrix.target }}
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.prep.outputs.image }}:${{ matrix.target }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            COMPOSER_AUTH=${{ secrets.ComposerAuth }}
-            SENTRY_AUTH_TOKEN=${{ secrets.SentryToken }}
-
-      - name: Build and push Production
-        if: matrix.target == 'production'
-        id: docker_build_prod
-        uses: docker/build-push-action@v2
-        with:
-          cache-from: "type=gha"
-          cache-to: "type=gha,mode=max"
-          builder: ${{ steps.buildx.outputs.name }}
-          file: ./Dockerfile
-          target: production
-          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             COMPOSER_AUTH=${{ secrets.ComposerAuth }}
             SENTRY_AUTH_TOKEN=${{ secrets.SentryToken }}
-  
 
   local:
     runs-on: self-hosted
@@ -129,7 +113,7 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
         with:
-           platforms: arm64
+          platforms: arm64
 
       - name: Set up Docker Buildx
         id: buildx
@@ -158,15 +142,15 @@ jobs:
             COMPOSER_AUTH=${{ secrets.ComposerAuth }}
 
   check-org:
-      runs-on: ubuntu-latest
-      outputs:
-        check-org: ${{ steps.check-org.outputs.defined }}
-      steps:
-          - id: check-org
-            if: "${{ env.SentryOrg != '' }}"
-            run: echo "::set-output name=defined::true"
-            env:
-              SentryOrg: ${{ secrets.SentryOrg }}
+    runs-on: ubuntu-latest
+    outputs:
+      check-org: ${{ steps.check-org.outputs.defined }}
+    steps:
+      - id: check-org
+        if: "${{ env.SentryOrg != '' }}"
+        run: echo "::set-output name=defined::true"
+        env:
+          SentryOrg: ${{ secrets.SentryOrg }}
 
   publish-sentry:
     runs-on: ubuntu-latest
@@ -190,4 +174,3 @@ jobs:
       with:
         set_commits: skip
         version: ${{ github.ref }}
-
