@@ -73,7 +73,7 @@ jobs:
 
       - name: Build and push
         id: docker_build
-        if: ${{ !(matrix.target != 'development' && github.event_name == 'release') }}
+        if: ${{ !(matrix.target == 'development' && github.event_name == 'release') }}
         uses: docker/build-push-action@v4
         with:
           cache-from: "type=gha"
