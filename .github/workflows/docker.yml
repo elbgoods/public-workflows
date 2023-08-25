@@ -59,7 +59,7 @@ jobs:
             type=ref,event=pr,enable=${{ matrix.target == 'production' }}
             type=edge,branch=$repo.default_branch,enable=${{ matrix.target != 'development' }}
 
-            type=raw,value=${{ matrix.target }},enable=${{ matrix.target == 'development' || matrix.target == 'testing' }}
+            type=raw,value=${{ matrix.target }},enable=${{ matrix.target == 'development' || matrix.target == 'test' }}
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') && matrix.target == 'production' }}
 
       ######################################################
