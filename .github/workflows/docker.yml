@@ -14,6 +14,9 @@ on:
       SentryOrg:
         required: false
     inputs:
+      imageName:
+        required: false
+        type: string
       targets:
         required: false
         type: string
@@ -41,8 +44,9 @@ jobs:
       - name: Prepare Tags
         id: prep
         run: |
-          IMAGE=elbgoodsgmbh/${GITHUB_REPOSITORY#*/}
-          echo ::set-output name=image::${IMAGE}
+          IMAGE=elbgoodsgmbh/${{ inputs.imageName != '' && inputs.imageName || github.repository }}
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v4
@@ -149,7 +153,7 @@ jobs:
     steps:
       - id: check-org
         if: ${{ env.SentryOrg != '' }}
-        run: echo "::set-output name=defined::true"
+        run: echo "defined=true" >> $GITHUB_OUTPUT
         env:
           SentryOrg: ${{ secrets.SentryOrg }}
 
@@ -164,7 +168,7 @@ jobs:
       id: project
       run: |
         PROJECT=${GITHUB_REPOSITORY#*/}
-        echo ::set-output name=project::${PROJECT}
+        echo "name=$PROJECT" >> $GITHUB_OUTPUT
 
     - name: Notify Sentry of new Release
       uses: getsentry/action-release@v1
