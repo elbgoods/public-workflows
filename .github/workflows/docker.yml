@@ -28,7 +28,7 @@ jobs:
         target: ${{ fromJson(inputs.targets) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Docker Login
         uses: docker/login-action@v2
