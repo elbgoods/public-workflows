@@ -44,7 +44,7 @@ jobs:
       - name: Prepare Tags
         id: prep
         run: |
-          IMAGE=elbgoodsgmbh/${{ inputs.imageName != '' && inputs.imageName || github.repository }}
+          IMAGE=elbgoodsgmbh/${{ inputs.imageName != '' && inputs.imageName || github.event.repository.name }}
           echo "image=$IMAGE" >> $GITHUB_OUTPUT
 
       - name: Docker meta
@@ -110,8 +110,8 @@ jobs:
       - name: Prepare Tags
         id: prep
         run: |
-          IMAGE=elbgoodsgmbh/${GITHUB_REPOSITORY#*/}
-          echo ::set-output name=image::${IMAGE}
+          IMAGE=elbgoodsgmbh/${{ inputs.imageName != '' && inputs.imageName || github.event.repository.name }}
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
       ######################################################
       # Setup Cache and BuildX
       ######################################################
@@ -166,8 +166,8 @@ jobs:
 
     - name: Prepare Project
       id: project
-      run: |
-        PROJECT=${GITHUB_REPOSITORY#*/}
+      run: |  
+        PROJECT=${{ github.event.repository.name }}
         echo "name=$PROJECT" >> $GITHUB_OUTPUT
 
     - name: Notify Sentry of new Release
