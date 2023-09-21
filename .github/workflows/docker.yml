@@ -17,6 +17,10 @@ on:
       imageName:
         required: false
         type: string
+      dockerFile:
+        required: false
+        type: string
+        default: ./Dockerfile
       targets:
         required: false
         type: string
@@ -49,7 +53,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: ${{ steps.prep.outputs.image }}
           flavor: |
@@ -60,10 +64,7 @@ jobs:
 
             type=semver,pattern={{version}},enable=${{ matrix.target == 'production' }}
 
-            type=ref,event=branch
-
-            type=ref,event=pr,enable=${{ matrix.target == 'production' }}
-            type=edge,branch=$repo.default_branch,enable=${{ matrix.target != 'development' }}
+            type=edge,branch=$repo.default_branch,enable=${{ matrix.target == 'production' }}
 
             type=raw,value=${{ matrix.target }},enable=${{ matrix.target == 'development' || matrix.target == 'test' }}
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') && matrix.target == 'production' }}
@@ -85,7 +86,7 @@ jobs:
           cache-from: "type=gha"
           cache-to: "type=gha,mode=max"
           builder: ${{ steps.buildx.outputs.name }}
-          file: ./Dockerfile
+          file: ${{ inputs.dockerFile }}
           target: ${{ matrix.target }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
@@ -140,7 +141,7 @@ jobs:
           cache-from: "type=gha"
           cache-to: "type=gha,mode=max"
           builder: ${{ steps.buildx.outputs.name }}
-          file: ./Dockerfile
+          file: ${{ inputs.dockerFile }}
           target: local
           push: true
           tags: ${{ steps.prep.outputs.image }}:local
