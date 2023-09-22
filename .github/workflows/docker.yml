@@ -162,12 +162,14 @@ jobs:
     needs: [check-org]
     if: ${{ ( github.event_name == 'release' || github.event.action == 'created' ) && needs.check-org.outputs.check-org == 'true' }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+      with:
+        show-progress: false
 
     - name: Prepare Project
       id: project
-      run: |  
-        PROJECT=${{ github.event.repository.name }}
+      run: |
+        PROJECT=${GITHUB_REPOSITORY#*/}
         echo "name=$PROJECT" >> $GITHUB_OUTPUT
 
     - name: Notify Sentry of new Release
