@@ -56,6 +56,8 @@ jobs:
             latest=false
           tags: |
             type=semver,pattern={{version}},suffix=-staging,enable=${{ matrix.target == 'staging' && github.event_name == 'release' }}
+            type=semver,pattern={{version}},suffix=-test,enable=${{ matrix.target == 'test' && github.event_name == 'release' }}
+
             type=semver,pattern={{version}},enable=${{ matrix.target == 'production' }}
 
             type=ref,event=branch
