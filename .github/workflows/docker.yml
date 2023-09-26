@@ -14,6 +14,10 @@ on:
       SentryOrg:
         required: false
     inputs:
+      buildLocal:
+        required: false
+        type: boolean
+        default: true
       imageName:
         required: false
         type: string
@@ -97,7 +101,7 @@ jobs:
 
   local:
     runs-on: self-hosted
-    if: github.ref_name == 'main'
+    if: github.ref_name == 'main' && inputs.buildLocal == true
     needs: main
     steps:
       - name: Checkout
