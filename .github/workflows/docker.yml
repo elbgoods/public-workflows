@@ -65,9 +65,11 @@ jobs:
           tags: |
             type=semver,pattern={{version}},suffix=-staging,enable=${{ matrix.target == 'staging' && github.event_name == 'release' }}
             type=semver,pattern={{version}},suffix=-test,enable=${{ matrix.target == 'test' && github.event_name == 'release' }}
-
             type=semver,pattern={{version}},enable=${{ matrix.target == 'production' }}
 
+            type=ref,event=branch
+            
+            type=edge,branch=$repo.default_branch,enable=${{ matrix.target != 'development' }}
             type=edge,branch=$repo.default_branch,enable=${{ matrix.target == 'production' }}
 
             type=raw,value=${{ matrix.target }},enable=${{ matrix.target == 'development' || matrix.target == 'test' }}
