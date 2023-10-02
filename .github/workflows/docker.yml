@@ -100,6 +100,8 @@ jobs:
           build-args: |
             COMPOSER_AUTH=${{ secrets.ComposerAuth }}
             SENTRY_AUTH_TOKEN=${{ secrets.SentryToken }}
+            CREATED_AT=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            REVISION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}
 
   local:
     runs-on: self-hosted
