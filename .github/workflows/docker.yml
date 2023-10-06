@@ -102,6 +102,7 @@ jobs:
             SENTRY_AUTH_TOKEN=${{ secrets.SentryToken }}
             CREATED_AT=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
             REVISION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}
+            VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
 
   local:
     runs-on: self-hosted
