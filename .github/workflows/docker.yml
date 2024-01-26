@@ -182,7 +182,7 @@ jobs:
       id: project
       run: |
         PROJECT=${GITHUB_REPOSITORY#*/}
-        echo ::set-output name=project::${PROJECT}
+        echo "project=${PROJECT}" >> $GITHUB_OUTPUT
 
     - name: Notify Sentry of new Release
       uses: getsentry/action-release@v1
