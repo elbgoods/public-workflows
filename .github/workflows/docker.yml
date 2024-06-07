@@ -89,6 +89,7 @@ jobs:
         if: ${{ !(matrix.target == 'development' && github.event_name == 'release') }}
         uses: docker/build-push-action@v5
         with:
+          context: .
           cache-from: "type=gha"
           cache-to: "type=gha,mode=max"
           builder: ${{ steps.buildx.outputs.name }}
