@@ -87,7 +87,7 @@ jobs:
       - name: Build and push
         id: docker_build
         if: ${{ !(matrix.target == 'development' && github.event_name == 'release') }}
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           cache-from: "type=gha"
@@ -146,7 +146,7 @@ jobs:
       ######################################################
       - name: Build and push local
         id: docker_build_local
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           cache-from: "type=gha"
           cache-to: "type=gha,mode=max"
@@ -186,7 +186,7 @@ jobs:
         echo "project=${PROJECT}" >> $GITHUB_OUTPUT
 
     - name: Notify Sentry of new Release
-      uses: getsentry/action-release@v1
+      uses: getsentry/action-release@v3
       env:
         SENTRY_AUTH_TOKEN: ${{ secrets.SentryToken }}
         SENTRY_ORG: ${{ secrets.SentryOrg }}
