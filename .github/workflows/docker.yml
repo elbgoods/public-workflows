@@ -32,7 +32,7 @@ jobs:
         id: prep
         run: |
           IMAGE=elbgoodsgmbh/${GITHUB_REPOSITORY#*/}
-          echo ::set-output name=image::${IMAGE}
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v4
@@ -91,14 +91,14 @@ jobs:
         id: prep
         run: |
           IMAGE=elbgoodsgmbh/${GITHUB_REPOSITORY#*/}
-          echo ::set-output name=image::${IMAGE}
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
       ######################################################
       # Setup Cache and BuildX
       ######################################################
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
-           platforms: arm64
+          platforms: arm64
 
       - name: Set up Docker Buildx
         id: buildx
@@ -127,15 +127,15 @@ jobs:
             COMPOSER_AUTH=${{ secrets.ComposerAuth }}
 
   check-org:
-      runs-on: ubuntu-latest
-      outputs:
-        check-org: ${{ steps.check-org.outputs.defined }}
-      steps:
-          - id: check-org
-            if: "${{ env.SentryOrg != '' }}"
-            run: echo "::set-output name=defined::true"
-            env:
-              SentryOrg: ${{ secrets.SentryOrg }}
+    runs-on: ubuntu-latest
+    outputs:
+      check-org: ${{ steps.check-org.outputs.defined }}
+    steps:
+      - id: check-org
+        if: ${{ env.SentryOrg != '' }}
+        run: echo "defined=true" >> $GITHUB_OUTPUT
+        env:
+          SentryOrg: ${{ secrets.SentryOrg }}
 
   publish-sentry:
     runs-on: ubuntu-latest
@@ -143,12 +143,14 @@ jobs:
     if: ${{ ( github.event_name == 'release' || github.event.action == 'created' ) && needs.check-org.outputs.check-org == 'true' }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        show-progress: false
 
     - name: Prepare Project
       id: project
       run: |
         PROJECT=${GITHUB_REPOSITORY#*/}
-        echo ::set-output name=project::${PROJECT}
+        echo "project=${PROJECT}" >> $GITHUB_OUTPUT
 
     - name: Notify Sentry of new Release
       uses: getsentry/action-release@v3
