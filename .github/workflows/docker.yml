@@ -141,6 +141,7 @@ jobs:
         with:
           version: latest
           driver-opts: network=host
+          driver: docker
 
       - name: Available platforms
         run: echo ${{ steps.buildx.outputs.platforms }}
@@ -151,13 +152,13 @@ jobs:
         id: docker_build_local
         uses: docker/build-push-action@v6
         with:
-          cache-from: type=registry,ref=docker.io/elbgoodsgmbh/${{ steps.prep.outputs.image }}/app:buildcache,ignore-error=true
-          cache-to: type=registry,ref=docker.io/elbgoodsgmbh/${{ steps.prep.outputs.image }}/app:buildcache,mode=max
+          cache-from: type=registry,ref=docker.io/${{ steps.prep.outputs.image }}/app:buildcache,ignore-error=true
+          cache-to: type=registry,ref=docker.io/${{ steps.prep.outputs.image }}/app:buildcache,mode=max
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ inputs.dockerFile }}
           target: local
           push: true
-          tags: elbgoodsgmbh/${{ steps.prep.outputs.image }}:local
+          tags: ${{ steps.prep.outputs.image }}:local
           platforms: linux/amd64,linux/arm64
           build-args: |
             COMPOSER_AUTH=${{ secrets.ComposerAuth }}
