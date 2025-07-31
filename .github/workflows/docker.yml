@@ -150,8 +150,8 @@ jobs:
         id: docker_build_local
         uses: docker/build-push-action@v6
         with:
-          cache-from: type=registry,ref=user/app:buildcache
-          cache-to: type=registry,ref=user/app:buildcache,mode=max
+          cache-from: type=registry,ref=docker.io/${{ steps.prep.outputs.image }}/app:buildcache,ignore-error=true
+          cache-to: type=registry,ref=docker.io/${{ steps.prep.outputs.image }}/app:buildcache,mode=max
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ inputs.dockerFile }}
           target: local
