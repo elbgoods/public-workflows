@@ -133,6 +133,7 @@ jobs:
         uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
+        cache: false
 
       - name: Set up Docker Buildx
         id: buildx
@@ -150,13 +151,13 @@ jobs:
         id: docker_build_local
         uses: docker/build-push-action@v6
         with:
-          cache-from: type=registry,ref=docker.io/${{ steps.prep.outputs.image }}/app:buildcache,ignore-error=true
-          cache-to: type=registry,ref=docker.io/${{ steps.prep.outputs.image }}/app:buildcache,mode=max
+          cache-from: type=registry,ref=docker.io/elbgoodsgmbh/${{ steps.prep.outputs.image }}/app:buildcache,ignore-error=true
+          cache-to: type=registry,ref=docker.io/elbgoodsgmbh/${{ steps.prep.outputs.image }}/app:buildcache,mode=max
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ inputs.dockerFile }}
           target: local
           push: true
-          tags: ${{ steps.prep.outputs.image }}:local
+          tags: elbgoodsgmbh/${{ steps.prep.outputs.image }}:local
           platforms: linux/amd64,linux/arm64
           build-args: |
             COMPOSER_AUTH=${{ secrets.ComposerAuth }}
