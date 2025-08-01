@@ -133,7 +133,7 @@ jobs:
         uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
-        cache-image: false
+          cache-image: false
 
       - name: Set up Docker Buildx
         id: buildx
