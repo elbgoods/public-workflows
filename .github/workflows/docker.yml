@@ -141,7 +141,6 @@ jobs:
         with:
           version: latest
           driver-opts: network=host
-          driver: docker
 
       - name: Available platforms
         run: echo ${{ steps.buildx.outputs.platforms }}
