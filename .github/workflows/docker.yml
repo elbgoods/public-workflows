@@ -107,7 +107,7 @@ jobs:
             VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
 
   local:
-    runs-on: ubuntu-8core
+    runs-on: ubuntu-latest
     if: github.ref_name == 'main' && inputs.buildLocal == true
     needs: main
     steps:
