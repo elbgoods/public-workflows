@@ -195,4 +195,4 @@ jobs:
         SENTRY_PROJECT: ${{ steps.project.outputs.project }}
       with:
         set_commits: skip
-        version: ${{ github.ref }}
+        release: ${{ github.ref }}
