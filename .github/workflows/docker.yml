@@ -30,10 +30,33 @@ on:
         type: string
         # Define array as string because Github does not support arrays here at the moment
         default: "['production']"
+      ecr:
+        description: Also build-push to AWS ECR (single build, multi-registry)
+        required: false
+        type: boolean
+        default: false
+      aws-region:
+        description: AWS region of the ECR registry
+        required: false
+        type: string
+        default: eu-west-1
+      aws-role-arn:
+        description: IAM role ARN to assume for ECR push (OIDC, no static keys)
+        required: false
+        type: string
+        default: ''
+      ecr-repository:
+        description: ECR repository name (defaults to imageName / repo name)
+        required: false
+        type: string
+        default: ''
 
 jobs:
   main:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # OIDC: assume the ECR push role (only used when ecr=true)
+      contents: read
     strategy:
       matrix:
         target: ${{ fromJson(inputs.targets) }}
@@ -47,6 +70,19 @@ jobs:
           username: ${{ secrets.DockerHubUser }}
           password: ${{ secrets.DockerHubPass }}
       ######################################################
+      # ECR auth (OIDC) — only when ecr=true
+      ######################################################
+      - name: Configure AWS credentials
+        if: ${{ inputs.ecr }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.aws-role-arn }}
+          aws-region: ${{ inputs.aws-region }}
+      - name: Login to Amazon ECR
+        id: ecr
+        if: ${{ inputs.ecr }}
+        uses: aws-actions/amazon-ecr-login@v2
+      ######################################################
       # Setting up final build tags
       ######################################################
       - name: Prepare Tags
@@ -54,12 +90,19 @@ jobs:
         run: |
           IMAGE=elbgoodsgmbh/${{ inputs.imageName != '' && inputs.imageName || github.event.repository.name }}
           echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          ECR_REPO='${{ inputs.ecr-repository }}'
+          [ -z "$ECR_REPO" ] && ECR_REPO='${{ inputs.imageName != '' && inputs.imageName || github.event.repository.name }}'
+          echo "ecr_image=${{ steps.ecr.outputs.registry }}/${ECR_REPO}" >> $GITHUB_OUTPUT
 
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ steps.prep.outputs.image }}
+          # Multi-registry: metadata-action emits the same tag set for each image,
+          # so the single build below pushes to Docker Hub AND ECR — no second build.
+          images: |
+            ${{ steps.prep.outputs.image }}
+            ${{ inputs.ecr && steps.prep.outputs.ecr_image || '' }}
           flavor: |
             latest=false
           tags: |
@@ -68,12 +111,15 @@ jobs:
             type=semver,pattern={{version}},enable=${{ matrix.target == 'production' }}
 
             type=ref,event=branch
-            
+
             type=edge,branch=$repo.default_branch,enable=${{ matrix.target != 'development' }}
             type=edge,branch=$repo.default_branch,enable=${{ matrix.target == 'production' }}
 
             type=raw,value=${{ matrix.target }},enable=${{ matrix.target == 'development' || matrix.target == 'test' }}
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') && matrix.target == 'production' }}
+
+            # ECR-only: sha-prefixed tag for Flux image-automation (dev sha-* bumps).
+            type=sha,prefix=sha-,enable=${{ inputs.ecr && matrix.target == 'production' }}
 
       ######################################################
       # Setup Cache and BuildX
