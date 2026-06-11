@@ -2,6 +2,23 @@ name: Build PHP FPM Container and Upload to Dockerhub
 
 on:
   workflow_call:
+    inputs:
+      ecr:
+        description: Also build-push to AWS ECR (single build, multi-registry)
+        type: boolean
+        default: false
+      aws-region:
+        description: AWS region of the ECR registry
+        type: string
+        default: eu-west-1
+      aws-role-arn:
+        description: IAM role ARN to assume for ECR push (OIDC, no static keys)
+        type: string
+        default: ''
+      ecr-repository:
+        description: ECR repository name (defaults to the GitHub repo name)
+        type: string
+        default: ''
     secrets:
       DockerHubUser:
         required: true
@@ -17,6 +34,9 @@ on:
 jobs:
   main:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # OIDC: assume the ECR push role (only used when ecr=true)
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,23 +46,44 @@ jobs:
           username: ${{ secrets.DockerHubUser }}
           password: ${{ secrets.DockerHubPass }}
       ######################################################
+      # ECR auth (OIDC) — only when ecr=true
+      ######################################################
+      - name: Configure AWS credentials
+        if: ${{ inputs.ecr }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.aws-role-arn }}
+          aws-region: ${{ inputs.aws-region }}
+      - name: Login to Amazon ECR
+        id: ecr
+        if: ${{ inputs.ecr }}
+        uses: aws-actions/amazon-ecr-login@v2
+      ######################################################
       # Setting up final build tags
       ######################################################
       - name: Prepare Tags
         id: prep
         run: |
-          IMAGE=elbgoodsgmbh/${GITHUB_REPOSITORY#*/}
-          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          REPO=${GITHUB_REPOSITORY#*/}
+          echo "image=elbgoodsgmbh/${REPO}" >> $GITHUB_OUTPUT
+          ECR_REPO='${{ inputs.ecr-repository }}'
+          [ -z "$ECR_REPO" ] && ECR_REPO="$REPO"
+          echo "ecr_image=${{ steps.ecr.outputs.registry }}/${ECR_REPO}" >> $GITHUB_OUTPUT
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
-          images: ${{ steps.prep.outputs.image }}
+          # Multi-registry: metadata-action emits the same tag set for each image,
+          # so the single build below pushes to Docker Hub AND ECR — no second build.
+          images: |
+            ${{ steps.prep.outputs.image }}
+            ${{ inputs.ecr && steps.prep.outputs.ecr_image || '' }}
           flavor: |
             latest=auto
           tags: |
             type=edge,enable=true,branch=main
             type=ref,event=pr
+            type=sha,prefix=sha-,enable=${{ inputs.ecr }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
