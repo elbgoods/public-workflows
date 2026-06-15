@@ -4,9 +4,9 @@ on:
   workflow_call:
     secrets:
       DockerHubUser:
-        required: true
+        required: false
       DockerHubPass:
-        required: true
+        required: false
       ComposerAuth:
         required: false
       SentryToken:
@@ -50,6 +50,16 @@ on:
         required: false
         type: string
         default: ''
+      dockerHub:
+        description: Push to Docker Hub. Set false for ECR-only builds.
+        required: false
+        type: boolean
+        default: true
+      tagScheme:
+        description: "Tag scheme. 'rentman' = rentman-main / rentman-{ver}-staging / -production."
+        required: false
+        type: string
+        default: ''
 
 jobs:
   main:
@@ -65,6 +75,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Docker Login
+        if: ${{ inputs.dockerHub }}
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DockerHubUser }}
@@ -101,11 +112,12 @@ jobs:
           # Multi-registry: metadata-action emits the same tag set for each image,
           # so the single build below pushes to Docker Hub AND ECR — no second build.
           images: |
-            ${{ steps.prep.outputs.image }}
+            ${{ inputs.dockerHub && steps.prep.outputs.image || '' }}
             ${{ inputs.ecr && steps.prep.outputs.ecr_image || '' }}
           flavor: |
             latest=false
           tags: |
+            # Existing scheme — ALWAYS emitted (keeps Docker Hub / legacy deploys working)
             type=semver,pattern={{version}},suffix=-staging,enable=${{ matrix.target == 'staging' && github.event_name == 'release' }}
             type=semver,pattern={{version}},suffix=-test,enable=${{ matrix.target == 'test' && github.event_name == 'release' }}
             type=semver,pattern={{version}},enable=${{ matrix.target == 'production' }}
@@ -118,8 +130,12 @@ jobs:
             type=raw,value=${{ matrix.target }},enable=${{ matrix.target == 'development' || matrix.target == 'test' }}
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') && matrix.target == 'production' }}
 
-            # ECR-only: sha-prefixed tag for Flux image-automation (dev sha-* bumps).
             type=sha,prefix=sha-,enable=${{ inputs.ecr && matrix.target == 'production' }}
+
+            # rentman scheme — ADDITIVE extra tags (opt-in via tagScheme=rentman) for the new cluster
+            type=raw,value=rentman-main,enable=${{ inputs.tagScheme == 'rentman' && matrix.target == 'development' && github.ref == format('refs/heads/{0}', 'main') }}
+            type=semver,pattern=rentman-{{version}}-staging,enable=${{ inputs.tagScheme == 'rentman' && matrix.target == 'staging' && github.event_name == 'release' }}
+            type=semver,pattern=rentman-{{version}}-production,enable=${{ inputs.tagScheme == 'rentman' && matrix.target == 'production' && github.event_name == 'release' }}
 
       ######################################################
       # Setup Cache and BuildX
@@ -154,7 +170,7 @@ jobs:
 
   local:
     runs-on: ubuntu-latest
-    if: github.ref_name == 'main' && inputs.buildLocal == true
+    if: github.ref_name == 'main' && inputs.buildLocal == true && inputs.dockerHub == true
     needs: main
     steps:
       - name: Checkout
