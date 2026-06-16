@@ -124,8 +124,10 @@ jobs:
 
             type=ref,event=branch
 
-            type=edge,branch=$repo.default_branch,enable=${{ matrix.target != 'development' }}
-            type=edge,branch=$repo.default_branch,enable=${{ matrix.target == 'production' }}
+            # `type=edge` with branch=$repo.default_branch did not emit the tag here, so
+            # force it as a raw tag on default-branch production builds (same gate as latest).
+            # The :edge tag is what the dev cluster's argocd-image-updater watches.
+            type=raw,value=edge,enable=${{ github.ref == format('refs/heads/{0}', 'main') && matrix.target == 'production' }}
 
             type=raw,value=${{ matrix.target }},enable=${{ matrix.target == 'development' || matrix.target == 'test' }}
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') && matrix.target == 'production' }}
